@@ -1,0 +1,7 @@
+node_modules/
+.state/
+*.sqlite*
+grant.json
+host.json
+pending.json*
+*.new
