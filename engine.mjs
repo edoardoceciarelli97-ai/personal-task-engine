@@ -1,6 +1,12 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdirSync, openSync, closeSync, lstatSync, realpathSync } from 'node:fs';
+import {
+  mkdirSync,
+  openSync,
+  closeSync,
+  lstatSync,
+  realpathSync,
+} from 'node:fs';
 import path from 'node:path';
 export const hash = (v) =>
   createHash('sha256')
@@ -35,9 +41,79 @@ export function privateDirectory(root) {
     'PRIVATE_DIRECTORY_PERMISSIONS_REQUIRED',
   );
 }
+
+export function safeDiagnostic(d = {}) {
+  const out = {};
+  const phases = [
+    'preflight',
+    'dispatch',
+    'http_response',
+    'sse_open',
+    'sse_event',
+    'terminal',
+    'provider_completed',
+  ];
+  if (phases.includes(d.phase)) out.phase = d.phase;
+  if (typeof d.dispatchAttempted === 'boolean')
+    out.dispatchAttempted = d.dispatchAttempted;
+  if (
+    Number.isInteger(d.httpStatus) &&
+    d.httpStatus >= 100 &&
+    d.httpStatus <= 599
+  )
+    out.httpStatus = d.httpStatus;
+  if (/^[a-zA-Z0-9_-]{1,200}$/.test(d.requestId || ''))
+    out.requestId = d.requestId;
+  if (Number.isSafeInteger(d.eventCount) && d.eventCount >= 0)
+    out.eventCount = d.eventCount;
+  if (
+    [
+      'response.completed',
+      'response.failed',
+      'response.incomplete',
+      'error',
+    ].includes(d.terminalType)
+  )
+    out.terminalType = d.terminalType;
+  const codes = [
+    'TIMEOUT',
+    'ABORTED',
+    'TRANSPORT_OR_CLIENT_ERROR',
+    'SOL_NOT_AVAILABLE',
+    'CONSENT_OR_GRANT_EXPIRED',
+    'SSE_REQUIRED',
+    'OUTPUT_LIMIT',
+    'INVALID_SSE_JSON',
+    'INVALID_SSE_EVENT',
+    'INVALID_TEXT_DELTA',
+    'DUPLICATE_TERMINAL',
+    'INVALID_COMPLETED_RESPONSE',
+    'STREAM_NOT_COMPLETED',
+    'OUTPUT_TEXT_MISMATCH',
+    'OUTPUT_TEXT_MISSING',
+    'PROVIDER_TERMINAL_ERROR',
+    'PROVIDER_HTTP_ERROR',
+    'VALID_PLAN_GRANT_REQUIRED',
+    'UNEXPIRED_EXECUTION_CONSENT_REQUIRED',
+    'API_KEY_ENV_FORBIDDEN',
+    'EXACT_MODEL_REQUIRED',
+    'subscription_sharing_usage_limit_exceeded',
+    'subscription_sharing_usage_unavailable',
+  ];
+  if (
+    codes.includes(d.errorCode) ||
+    /^HTTP_[1-5][0-9]{2}$/.test(d.errorCode || '')
+  )
+    out.errorCode = d.errorCode;
+  return out;
+}
+
 export class Engine {
   constructor(root, owner) {
-    requireTrue(typeof owner === 'string' && owner.length > 0, 'OWNER_REQUIRED');
+    requireTrue(
+      typeof owner === 'string' && owner.length > 0,
+      'OWNER_REQUIRED',
+    );
     privateDirectory(root);
     this.owner = owner;
     const file = path.join(root, 'engine.sqlite');
@@ -48,21 +124,29 @@ export class Engine {
     }
     const st = lstatSync(file);
     requireTrue(
-      st.isFile() && !st.isSymbolicLink() && st.uid === process.getuid() && (st.mode & 0o077) === 0,
+      st.isFile() &&
+        !st.isSymbolicLink() &&
+        st.uid === process.getuid() &&
+        (st.mode & 0o077) === 0,
       'PRIVATE_DATABASE_REQUIRED',
     );
     this.db = new DatabaseSync(file);
-    this.db.exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;
+    this.db
+      .exec(`PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,owner TEXT NOT NULL,snapshot TEXT NOT NULL,digest TEXT NOT NULL,due INTEGER NOT NULL,state TEXT NOT NULL,consent TEXT,attempts INTEGER NOT NULL DEFAULT 0,result TEXT);
       CREATE TABLE IF NOT EXISTS audit(seq INTEGER PRIMARY KEY,job TEXT,event TEXT NOT NULL,previous TEXT NOT NULL,digest TEXT NOT NULL);
       INSERT OR IGNORE INTO settings VALUES('paused','false');`);
-    const bound = this.db.prepare("SELECT v FROM settings WHERE k='owner'").get();
+    const bound = this.db
+      .prepare("SELECT v FROM settings WHERE k='owner'")
+      .get();
     if (bound && bound.v !== owner) {
       this.db.close();
       throw new Error('OTHER_OWNER_DATABASE');
     }
-    this.db.prepare("INSERT OR IGNORE INTO settings VALUES('owner',?)").run(owner);
+    this.db
+      .prepare("INSERT OR IGNORE INTO settings VALUES('owner',?)")
+      .run(owner);
   }
   close() {
     this.db.close();
@@ -80,14 +164,23 @@ export class Engine {
   }
   event(id, type, data = {}) {
     const previous =
-      this.db.prepare('SELECT digest FROM audit ORDER BY seq DESC LIMIT 1').get()?.digest ||
-      'GENESIS';
+      this.db
+        .prepare('SELECT digest FROM audit ORDER BY seq DESC LIMIT 1')
+        .get()?.digest || 'GENESIS';
     const event = JSON.stringify({ type, data, at: new Date().toISOString() });
     this.db
       .prepare('INSERT INTO audit(job,event,previous,digest) VALUES(?,?,?,?)')
       .run(id, event, previous, hash(previous + event));
   }
-  enqueue({ role, version, instructions, input, documents = [], memory = [], due = Date.now() }) {
+  enqueue({
+    role,
+    version,
+    instructions,
+    input,
+    documents = [],
+    memory = [],
+    due = Date.now(),
+  }) {
     requireTrue(
       typeof role === 'string' &&
         role.length &&
@@ -98,7 +191,9 @@ export class Engine {
       'VERSIONED_ROLE_REQUIRED',
     );
     requireTrue(
-      Number.isSafeInteger(due) && Array.isArray(documents) && Array.isArray(memory),
+      Number.isSafeInteger(due) &&
+        Array.isArray(documents) &&
+        Array.isArray(memory),
       'INVALID_SNAPSHOT',
     );
     const snapshot = JSON.stringify({
@@ -115,21 +210,28 @@ export class Engine {
       digest = hash(snapshot);
     this.tx(() => {
       this.db
-        .prepare("INSERT INTO jobs(id,owner,snapshot,digest,due,state) VALUES(?,?,?,?,?,'BLOCKED')")
+        .prepare(
+          "INSERT INTO jobs(id,owner,snapshot,digest,due,state) VALUES(?,?,?,?,?,'BLOCKED')",
+        )
         .run(id, this.owner, snapshot, digest, due);
       this.event(id, 'CREATED_BLOCKED');
     });
     return { id, digest };
   }
   job(id) {
-    const r = this.db.prepare('SELECT * FROM jobs WHERE id=? AND owner=?').get(id, this.owner);
+    const r = this.db
+      .prepare('SELECT * FROM jobs WHERE id=? AND owner=?')
+      .get(id, this.owner);
     requireTrue(r, 'JOB_NOT_FOUND');
     return r;
   }
   authorize(id, c, now = Date.now()) {
     this.tx(() => {
       const j = this.job(id);
-      requireTrue(j.state === 'BLOCKED' && j.attempts === 0, 'JOB_NOT_AUTHORIZABLE');
+      requireTrue(
+        j.state === 'BLOCKED' && j.attempts === 0,
+        'JOB_NOT_AUTHORIZABLE',
+      );
       requireTrue(
         c.owner === this.owner &&
           c.jobId === id &&
@@ -144,7 +246,9 @@ export class Engine {
         'SPECIFIC_PERSONAL_CONSENT_REQUIRED',
       );
       requireTrue(
-        Number.isSafeInteger(c.expiresAt) && c.expiresAt > now && c.expiresAt <= now + 86400000,
+        Number.isSafeInteger(c.expiresAt) &&
+          c.expiresAt > now &&
+          c.expiresAt <= now + 86400000,
         'CONSENT_EXPIRED_OR_TOO_LONG',
       );
       this.db
@@ -175,8 +279,12 @@ export class Engine {
   }
   recover() {
     this.tx(() => {
-      for (const r of this.db.prepare("SELECT id FROM jobs WHERE state='RUNNING'").all()) {
-        this.db.prepare("UPDATE jobs SET state='UNCERTAIN' WHERE id=?").run(r.id);
+      for (const r of this.db
+        .prepare("SELECT id FROM jobs WHERE state='RUNNING'")
+        .all()) {
+        this.db
+          .prepare("UPDATE jobs SET state='UNCERTAIN' WHERE id=?")
+          .run(r.id);
         this.event(r.id, 'CRASH_UNCERTAIN_NO_RETRY');
       }
     });
@@ -192,9 +300,13 @@ export class Engine {
       'SIWC_ADMISSION_REQUIRED',
     );
     const j = this.tx(() => {
-      if (this.db.prepare("SELECT v FROM settings WHERE k='paused'").get().v === 'true')
+      if (
+        this.db.prepare("SELECT v FROM settings WHERE k='paused'").get().v ===
+        'true'
+      )
         return null;
-      if (this.db.prepare("SELECT id FROM jobs WHERE state='RUNNING'").get()) return null;
+      if (this.db.prepare("SELECT id FROM jobs WHERE state='RUNNING'").get())
+        return null;
       const r = this.db
         .prepare(
           "SELECT * FROM jobs WHERE owner=? AND state='QUEUED' AND due<=? ORDER BY due,id LIMIT 1",
@@ -203,17 +315,23 @@ export class Engine {
       if (!r) return null;
       const c = JSON.parse(r.consent);
       if (c.expiresAt <= now) {
-        this.db.prepare("UPDATE jobs SET state='BLOCKED',consent=NULL WHERE id=?").run(r.id);
+        this.db
+          .prepare("UPDATE jobs SET state='BLOCKED',consent=NULL WHERE id=?")
+          .run(r.id);
         this.event(r.id, 'CONSENT_EXPIRED');
         return null;
       }
       requireTrue(
-        hash(r.snapshot) === r.digest && c.inputHash === r.digest && r.attempts === 0,
+        hash(r.snapshot) === r.digest &&
+          c.inputHash === r.digest &&
+          r.attempts === 0,
         'SNAPSHOT_OR_FENCE_INVALID',
       );
       if (automation) {
         const key = 'automation:' + hash(automation);
-        const used = Number(this.db.prepare('SELECT v FROM settings WHERE k=?').get(key)?.v || 0);
+        const used = Number(
+          this.db.prepare('SELECT v FROM settings WHERE k=?').get(key)?.v || 0,
+        );
         requireTrue(used < automation.maxJobs, 'AUTOMATION_BUDGET_EXHAUSTED');
         this.db
           .prepare(
@@ -221,30 +339,69 @@ export class Engine {
           )
           .run(key, String(used + 1));
       }
-      this.db.prepare("UPDATE jobs SET state='RUNNING',attempts=1 WHERE id=?").run(r.id);
+      this.db
+        .prepare("UPDATE jobs SET state='RUNNING',attempts=1 WHERE id=?")
+        .run(r.id);
       this.event(r.id, 'DURABLE_ATTEMPT_RESERVED');
       return r;
     });
     if (!j) return null;
+    let phase = 'provider',
+      responseEvidence = null;
     try {
       const response = await provider.infer(JSON.parse(j.snapshot), {
         expiresAt: JSON.parse(j.consent).expiresAt,
+        observe: (d) =>
+          this.tx(() =>
+            this.event(j.id, 'PROVIDER_CHECKPOINT', safeDiagnostic(d)),
+          ),
       });
       requireTrue(
-        response?.completed === true && response.requestedModel === 'gpt-6.1-sol',
+        response?.completed === true &&
+          response.requestedModel === 'gpt-6.1-sol',
         'INCOMPLETE_RESPONSE',
       );
       requireTrue(
         !response.observedModel || response.observedModel === 'gpt-6.1-sol',
         'WRONG_MODEL',
       );
-      const output = JSON.parse(response.text);
+      responseEvidence = {
+        providerResponseId: /^resp_[a-zA-Z0-9_-]{1,200}$/.test(
+          response.id || '',
+        )
+          ? response.id
+          : null,
+        observedModel:
+          response.observedModel === 'gpt-6.1-sol'
+            ? response.observedModel
+            : null,
+        usage: null,
+      };
+      if (response.usage && typeof response.usage === 'object') {
+        const u = {};
+        for (const k of ['input_tokens', 'output_tokens', 'total_tokens'])
+          if (Number.isSafeInteger(response.usage[k]) && response.usage[k] >= 0)
+            u[k] = response.usage[k];
+        if (Object.keys(u).length) responseEvidence.usage = u;
+      }
+      this.tx(() =>
+        this.event(j.id, 'PROVIDER_RESPONSE_RECEIVED', responseEvidence),
+      );
+      phase = 'result_json';
+      let output;
+      try {
+        output = JSON.parse(response.text);
+      } catch {
+        throw new Error('INVALID_OUTPUT_JSON');
+      }
       requireTrue(
         output && typeof output === 'object' && !Array.isArray(output),
         'JSON_OBJECT_OUTPUT_REQUIRED',
       );
+      phase = 'persistence';
       const result = {
         version: 1,
+        diagnostic: response.diagnostic || null,
         inputHash: j.digest,
         requestedModel: 'gpt-6.1-sol',
         observedModel: response.observedModel || null,
@@ -256,7 +413,8 @@ export class Engine {
         origin: 'PERSONAL_SIWC_NOT_P3_BROKER_RECEIPT',
       };
       const persistedState = this.tx(() => {
-        const state = this.job(j.id).state === 'RUNNING' ? 'VERIFYING' : 'UNCERTAIN';
+        const state =
+          this.job(j.id).state === 'RUNNING' ? 'VERIFYING' : 'UNCERTAIN';
         this.db
           .prepare('UPDATE jobs SET state=?,result=? WHERE id=?')
           .run(state, JSON.stringify(result), j.id);
@@ -271,6 +429,23 @@ export class Engine {
       });
       return { id: j.id, state: persistedState, result };
     } catch (e) {
+      const safeCode = [
+        'INVALID_OUTPUT_JSON',
+        'JSON_OBJECT_OUTPUT_REQUIRED',
+        'WRONG_MODEL',
+        'INCOMPLETE_RESPONSE',
+      ].includes(e.message)
+        ? e.message
+        : [
+              'subscription_sharing_usage_limit_exceeded',
+              'subscription_sharing_usage_unavailable',
+            ].includes(e.code)
+          ? e.code
+          : 'EXECUTION_FAILED';
+      const failure = { phase, errorCode: safeCode };
+      // Persist allowlisted provider metadata only; never exception messages or response bodies.
+      if (e.diagnostic) failure.provider = safeDiagnostic(e.diagnostic);
+      if (responseEvidence) failure.responseEvidence = responseEvidence;
       const limit = [
         'subscription_sharing_usage_limit_exceeded',
         'subscription_sharing_usage_unavailable',
@@ -279,7 +454,11 @@ export class Engine {
         this.db
           .prepare('UPDATE jobs SET state=? WHERE id=?')
           .run(limit ? 'LIMITED' : 'UNCERTAIN', j.id);
-        this.event(j.id, limit ? 'PLAN_LIMIT_NO_RETRY' : 'UNCERTAIN_NO_RETRY');
+        this.event(
+          j.id,
+          limit ? 'PLAN_LIMIT_NO_RETRY' : 'UNCERTAIN_NO_RETRY',
+          failure,
+        );
       });
       this.pause(limit ? 'PLAN_LIMIT' : 'RECONCILIATION_REQUIRED');
       return { id: j.id, state: limit ? 'LIMITED' : 'UNCERTAIN' };
@@ -299,7 +478,8 @@ export class Engine {
   auditValid() {
     let previous = 'GENESIS';
     for (const r of this.db.prepare('SELECT * FROM audit ORDER BY seq').all()) {
-      if (r.previous !== previous || r.digest !== hash(previous + r.event)) return false;
+      if (r.previous !== previous || r.digest !== hash(previous + r.event))
+        return false;
       previous = r.digest;
     }
     return true;
@@ -332,18 +512,31 @@ export async function runSchedule(
   provider,
   admission,
   automation,
-  { clock = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), signal } = {},
+  {
+    clock = Date.now,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    signal,
+  } = {},
 ) {
   validateAutomation(automation, engine.owner, clock());
   while (clock() < automation.expiresAt && !signal?.aborted) {
-    if (engine.db.prepare("SELECT v FROM settings WHERE k='paused'").get().v === 'true') break;
+    if (
+      engine.db.prepare("SELECT v FROM settings WHERE k='paused'").get().v ===
+      'true'
+    )
+      break;
     const key = 'automation:' + hash(automation);
-    const used = Number(engine.db.prepare('SELECT v FROM settings WHERE k=?').get(key)?.v || 0);
+    const used = Number(
+      engine.db.prepare('SELECT v FROM settings WHERE k=?').get(key)?.v || 0,
+    );
     if (used >= automation.maxJobs) break;
     await engine.tick(provider, admission, clock(), automation);
     if (signal?.aborted) break;
     await sleep(
-      Math.min(automation.pollSeconds * 1000, Math.max(0, automation.expiresAt - clock())),
+      Math.min(
+        automation.pollSeconds * 1000,
+        Math.max(0, automation.expiresAt - clock()),
+      ),
     );
   }
   return { state: 'SCHEDULE_STOPPED', automaticRetry: false };
