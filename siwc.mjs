@@ -303,6 +303,86 @@ export async function catalog(grant, fetcher = fetch) {
     .filter((m) => m.visibility === 'list')
     .map((m) => ({ slug: m.slug, displayName: m.display_name }));
 }
+
+export function mimeMetadata(headers) {
+  const value = headers.get('content-type');
+  const essence = value?.split(';', 1)[0].trim().toLowerCase();
+  return {
+    contentTypePresent: value !== null,
+    mimeType:
+      /^[a-z0-9!#export class PlanProvider {^_.+-]{1,64}\/[a-z0-9!#export class PlanProvider {^_.+-]{1,64}$/.test(
+        essence || '',
+      )
+        ? essence
+        : null,
+  };
+}
+export async function inspectUnexpected(response) {
+  const reader = response.body?.getReader();
+  if (!reader) return { bodyStructure: 'EMPTY' };
+  let size = 0,
+    text = '',
+    timer;
+  const decoder = new TextDecoder();
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('DIAGNOSTIC_TIMEOUT')), 2000);
+  });
+  try {
+    for (;;) {
+      const { done, value } = await Promise.race([reader.read(), timeout]);
+      if (done) break;
+      size += value.length;
+      if (size > 8192) return { bodyStructure: 'LIMIT_REACHED' };
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    text = text.trim();
+    if (!text) return { bodyStructure: 'EMPTY' };
+    if (/^<!doctype html|^<html(?:\s|>)/i.test(text))
+      return { bodyStructure: 'HTML' };
+    if (/^(?:event:|data:)/.test(text)) return { bodyStructure: 'SSE_LIKE' };
+    if (text.startsWith('{') || text.startsWith('[')) {
+      let v;
+      try {
+        v = JSON.parse(text);
+      } catch {
+        return { bodyStructure: 'INVALID_JSON' };
+      }
+      const meta = {
+        bodyStructure: Array.isArray(v)
+          ? 'JSON_ARRAY'
+          : v?.error
+            ? 'JSON_OBJECT_ERROR'
+            : v?.object === 'response'
+              ? 'JSON_OBJECT_RESPONSE'
+              : 'JSON_OBJECT',
+      };
+      const code = v?.error?.code;
+      if (
+        [
+          'subscription_sharing_usage_limit_exceeded',
+          'subscription_sharing_usage_unavailable',
+          'invalid_request_error',
+          'invalid_value',
+          'invalid_api_key',
+          'insufficient_scope',
+          'rate_limit_exceeded',
+          'unsupported_parameter',
+        ].includes(code)
+      )
+        meta.providerErrorCode = code;
+      return meta;
+    }
+    return { bodyStructure: 'TEXT' };
+  } catch {
+    return { bodyStructure: 'UNREADABLE' };
+  } finally {
+    clearTimeout(timer);
+    await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 export class PlanProvider {
   constructor(grant, fetcher = fetch, observe = () => {}) {
     this.grant = grant;
@@ -376,6 +456,7 @@ export class PlanProvider {
       const requestId = response.headers.get('x-request-id');
       emit({
         phase: 'http_response',
+        ...mimeMetadata(response.headers),
         httpStatus: response.status,
         requestId: /^[a-zA-Z0-9_-]{1,200}$/.test(requestId || '')
           ? requestId
@@ -398,10 +479,13 @@ export class PlanProvider {
         e.code = code;
         throw e;
       }
-      requireTrue(
-        response.headers.get('content-type')?.includes('text/event-stream'),
-        'SSE_REQUIRED',
-      );
+      if (mimeMetadata(response.headers).mimeType !== 'text/event-stream') {
+        emit({
+          phase: 'unexpected_format',
+          ...(await inspectUnexpected(response)),
+        });
+        throw new Error('SSE_REQUIRED');
+      }
       emit({ phase: 'sse_open' });
       const reader = response.body.getReader(),
         decoder = new TextDecoder();

@@ -48,6 +48,7 @@ export function safeDiagnostic(d = {}) {
     'preflight',
     'dispatch',
     'http_response',
+    'unexpected_format',
     'sse_open',
     'sse_event',
     'terminal',
@@ -75,6 +76,44 @@ export function safeDiagnostic(d = {}) {
     ].includes(d.terminalType)
   )
     out.terminalType = d.terminalType;
+  if (typeof d.contentTypePresent === 'boolean')
+    out.contentTypePresent = d.contentTypePresent;
+  if (d.mimeType === null) out.mimeType = null;
+  else if (
+    /^[a-z0-9!#  const codes = [^_.+-]{1,64}\/[a-z0-9!#  const codes = [^_.+-]{1,64}$/.test(
+      d.mimeType || '',
+    )
+  )
+    out.mimeType = d.mimeType;
+  if (
+    [
+      'EMPTY',
+      'HTML',
+      'SSE_LIKE',
+      'INVALID_JSON',
+      'JSON_ARRAY',
+      'JSON_OBJECT_ERROR',
+      'JSON_OBJECT_RESPONSE',
+      'JSON_OBJECT',
+      'TEXT',
+      'LIMIT_REACHED',
+      'UNREADABLE',
+    ].includes(d.bodyStructure)
+  )
+    out.bodyStructure = d.bodyStructure;
+  if (
+    [
+      'subscription_sharing_usage_limit_exceeded',
+      'subscription_sharing_usage_unavailable',
+      'invalid_request_error',
+      'invalid_value',
+      'invalid_api_key',
+      'insufficient_scope',
+      'rate_limit_exceeded',
+      'unsupported_parameter',
+    ].includes(d.providerErrorCode)
+  )
+    out.providerErrorCode = d.providerErrorCode;
   const codes = [
     'TIMEOUT',
     'ABORTED',
