@@ -14,4 +14,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - run: sha256sum -c MANIFEST.sha256
+      - run: for file in *.mjs; do node --check "$file"; done
       - run: node --test *.test.mjs
