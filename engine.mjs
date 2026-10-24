@@ -1,3 +1,4 @@
+import { normalizeMime } from './mime.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -79,12 +80,10 @@ export function safeDiagnostic(d = {}) {
   if (typeof d.contentTypePresent === 'boolean')
     out.contentTypePresent = d.contentTypePresent;
   if (d.mimeType === null) out.mimeType = null;
-  else if (
-    /^[a-z0-9!#  const codes = [^_.+-]{1,64}\/[a-z0-9!#  const codes = [^_.+-]{1,64}$/.test(
-      d.mimeType || '',
-    )
-  )
-    out.mimeType = d.mimeType;
+  else {
+    const mime = normalizeMime(d.mimeType);
+    if (mime) out.mimeType = mime;
+  }
   if (
     [
       'EMPTY',

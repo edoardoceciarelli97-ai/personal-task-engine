@@ -1,3 +1,4 @@
+import { normalizeMime } from './mime.mjs';
 import {
   randomBytes,
   createHash,
@@ -306,16 +307,7 @@ export async function catalog(grant, fetcher = fetch) {
 
 export function mimeMetadata(headers) {
   const value = headers.get('content-type');
-  const essence = value?.split(';', 1)[0].trim().toLowerCase();
-  return {
-    contentTypePresent: value !== null,
-    mimeType:
-      /^[a-z0-9!#export class PlanProvider {^_.+-]{1,64}\/[a-z0-9!#export class PlanProvider {^_.+-]{1,64}$/.test(
-        essence || '',
-      )
-        ? essence
-        : null,
-  };
+  return { contentTypePresent: value !== null, mimeType: normalizeMime(value) };
 }
 export async function inspectUnexpected(response) {
   const reader = response.body?.getReader();

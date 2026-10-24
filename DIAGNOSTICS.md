@@ -24,3 +24,15 @@ This closes a diagnostic gap, not a proven historical provider failure. Previous
 headers and bodies that were never retained cannot be reconstructed. No Accept
 header workaround, transport substitution or automatic retry is introduced.
 Protocol reference: https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference
+
+## Shared strict MIME parser
+
+Both provider admission and diagnostic sanitization use `normalizeMime` from
+`mime.mjs`. It validates type/subtype tokens and parameter syntax, rejects control
+characters, invalid quoting, trailing garbage and duplicate parameter names, and
+returns only the lowercase essence. Parameter contents are never retained.
+
+The previous MIME regexes were corrupted by JavaScript replacement-string `$&`
+expansion during patch generation. The new parser is authored directly and shared,
+rather than duplicated via generated regex strings. This demonstrable defect is
+separate from historical SSE_REQUIRED failures whose headers were not retained.
