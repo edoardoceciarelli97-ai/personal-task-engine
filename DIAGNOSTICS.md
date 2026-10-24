@@ -36,3 +36,27 @@ The previous MIME regexes were corrupted by JavaScript replacement-string `$&`
 expansion during patch generation. The new parser is authored directly and shared,
 rather than duplicated via generated regex strings. This demonstrable defect is
 separate from historical SSE_REQUIRED failures whose headers were not retained.
+
+## Official SIWC headerless-SSE compatibility
+
+OpenAI's official `sign-in-with-chatgpt-devkit` (packages/local/src/responses.ts)
+explicitly allows a valid SSE stream without the Content-Type header on the SIWC
+direct route. Earlier Personal Task Engine versions rejected these HTTP 200
+responses before consuming any event, producing SSE_REQUIRED without verifying
+whether the stream contained response.completed.
+
+The patched client requests Accept: text/event-stream, accepts a missing MIME
+header only when a body exists, and still requires valid SSE events ending in
+response.completed before declaring success. A present but incorrect or invalid
+MIME remains rejected; HTML, JSON, malformed streams, absent terminal events,
+and interrupted streams cannot become a successful response. When the header
+is absent, the stream is parsed normally, not truncated at the 8 KiB
+unexpected-format diagnostic limit. No request retry, credential change,
+model substitution, or fallback billing is introduced.
+
+This is a demonstrated client compatibility defect and a tested protocol
+fix. The three historical UNCERTAIN requests cannot be reclassified
+retroactively: their complete responses were never captured.
+
+Official reference:
+https://github.com/openai/sign-in-with-chatgpt-devkit/blob/main/packages/local/src/responses.ts
