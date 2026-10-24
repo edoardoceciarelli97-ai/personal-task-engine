@@ -422,6 +422,7 @@ export class PlanProvider {
         headers: {
           Authorization: 'Bearer ' + this.grant.accessToken,
           'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
         },
         body: JSON.stringify({
           model: job.model,
@@ -471,10 +472,20 @@ export class PlanProvider {
         e.code = code;
         throw e;
       }
-      if (mimeMetadata(response.headers).mimeType !== 'text/event-stream') {
+      const responseMime = mimeMetadata(response.headers);
+      // The official SIWC DevKit permits headerless SSE on the direct route.
+      // If Content-Type is absent, validate events all the way to response.completed.
+      // A declared but wrong/malformed Content-Type remains a hard failure.
+      if (
+        !response.body ||
+        (responseMime.contentTypePresent &&
+          responseMime.mimeType !== 'text/event-stream')
+      ) {
         emit({
           phase: 'unexpected_format',
-          ...(await inspectUnexpected(response)),
+          ...(response.body
+            ? await inspectUnexpected(response)
+            : { bodyStructure: 'EMPTY' }),
         });
         throw new Error('SSE_REQUIRED');
       }
