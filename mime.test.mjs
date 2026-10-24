@@ -64,6 +64,63 @@ const terminal =
     },
   }) +
   '\n\n';
+test('headerless SSE with response.completed is accepted', async () => {
+  const r = await run(new Response(new TextEncoder().encode(terminal)));
+  assert.equal(r.calls, 1);
+  assert.equal(r.value.text, '{}');
+  assert(r.events.some((e) => e.contentTypePresent === false && e.mimeType === null));
+  assert(r.events.some((e) => e.terminalType === 'response.completed'));
+});
+test('headerless SSE >8 KiB is parsed, not rejected by diagnostic size', async () => {
+  const output = JSON.stringify({ message: 'x'.repeat(16000) });
+  const event =
+    'data: ' +
+    JSON.stringify({
+      type: 'response.completed',
+      response: {
+        status: 'completed',
+        model: job.model,
+        output: [
+          {
+            type: 'message',
+            role: 'assistant',
+            content: [{ type: 'output_text', text: output }],
+          },
+        ],
+      },
+    }) +
+    '\n\n';
+  assert(Buffer.byteLength(event) > 8192);
+  const r = await run(new Response(new TextEncoder().encode(event)));
+  assert.equal(r.calls, 1);
+  assert.equal(r.value.text, output);
+  assert(r.events.some((e) => e.terminalType === 'response.completed'));
+});
+test('headerless HTML and JSON never count as completed inference', async () => {
+  for (const body of [
+    '<!DOCTYPE html><html>not an SSE response</html>',
+    '{"object":"response","status":"completed"}',
+  ]) {
+    const r = await run(new Response(new TextEncoder().encode(body)));
+    assert.equal(r.calls, 1);
+    assert.equal(r.error.code, 'STREAM_NOT_COMPLETED');
+    assert(!r.events.some((e) => e.terminalType === 'response.completed'));
+  }
+});
+test('headerless SSE with no completed event is rejected', async () => {
+  const body = 'data: {"type":"response.created"}\n\n';
+  const r = await run(new Response(new TextEncoder().encode(body)));
+  assert.equal(r.calls, 1);
+  assert.equal(r.error.code, 'STREAM_NOT_COMPLETED');
+});
+test('explicit wrong MIME still blocks even valid SSE', async () => {
+  const r = await run(
+    new Response(terminal, { headers: { 'content-type': 'application/json' } }),
+  );
+  assert.equal(r.error.code, 'SSE_REQUIRED');
+  assert(!r.value);
+});
+
 test('valid mixed-case MIME with parameters remains SSE', async () => {
   const r = await run(
     new Response(terminal, {
