@@ -136,11 +136,12 @@ test('absent content-type is explicit; JSON is never success', async () => {
       new TextEncoder().encode('{"object":"response","output":"PRIVATE_TEXT"}'),
     ),
   );
-  assert.equal(r.error.code, 'SSE_REQUIRED');
+  assert.equal(r.error.code, 'STREAM_NOT_COMPLETED');
   assert(
     r.events.some((e) => e.contentTypePresent === false && e.mimeType === null),
   );
-  assert(r.events.some((e) => e.bodyStructure === 'JSON_OBJECT_RESPONSE'));
+  assert(r.events.some((e) => e.eventCount === 0));
+  assert(!r.events.some((e) => e.terminalType === 'response.completed'));
   assert(!JSON.stringify(r.events).includes('PRIVATE_TEXT'));
 });
 test('unexpected JSON error records only allowlisted code', async () => {
