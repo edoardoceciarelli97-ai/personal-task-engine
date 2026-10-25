@@ -1,0 +1,35 @@
+[Unit]
+Description=Personal Task Engine isolated readiness (no inference daemon)
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/var/lib/personal-task-engine/grant.json
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=aic-pte
+Group=aic-pte
+UMask=0077
+WorkingDirectory=/var/lib/personal-task-engine
+ExecStart=/usr/local/bin/node /opt/personal-task-engine/current/ops/health.mjs /var/lib/personal-task-engine /opt/personal-task-engine/current
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+ReadWritePaths=/var/lib/personal-task-engine
+InaccessiblePaths=-/opt/aic-office -/opt/evienza-office-candidate-68a6865-20261022 -/etc/evienza-b3-chain -/var/lib/evienza-office-assets -/var/run/docker.sock
+TimeoutStartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

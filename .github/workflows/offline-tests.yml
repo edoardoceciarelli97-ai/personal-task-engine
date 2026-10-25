@@ -15,5 +15,5 @@ jobs:
         with:
           node-version: '24'
       - run: sha256sum -c MANIFEST.sha256
-      - run: for file in *.mjs; do node --check "$file"; done
-      - run: node --test *.test.mjs
+      - run: for file in *.mjs ops/*.mjs; do node --check "$file"; done
+      - run: node --test *.test.mjs ops/*.test.mjs
