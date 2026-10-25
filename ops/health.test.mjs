@@ -1,3 +1,5 @@
+import { spawnSync } from 'node:child_process';
+import { symlinkSync } from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -55,4 +57,27 @@ test('expired token is visible without automatic refresh', (t) => {
     expiresAt: 1,
   });
   assert.equal(health(root, code).grantUnexpired, false);
+});
+
+test('health command executes through deployment symlink', (t) => {
+  const root = fixture(t),
+    link = path.join(root, 'entry.mjs');
+  symlinkSync(path.join(code, 'ops/health.mjs'), link);
+  const r = spawnSync(process.execPath, [link, root, code], {
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(JSON.parse(r.stdout).ready, true);
+});
+test('symlink command fails closed on unsafe storage', (t) => {
+  const root = fixture(t),
+    link = path.join(root, 'entry.mjs');
+  symlinkSync(path.join(code, 'ops/health.mjs'), link);
+  chmodSync(path.join(root, 'grant.json'), 0o644);
+  const r = spawnSync(process.execPath, [link, root, code], {
+    encoding: 'utf8',
+  });
+  assert.equal(r.status, 1);
+  assert.equal(r.stdout, '');
+  assert.match(r.stderr, /PTE_HEALTH_BLOCKED/);
 });

@@ -1,4 +1,4 @@
-import { readFileSync, lstatSync } from 'node:fs';
+import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -78,7 +78,10 @@ export function health(root, code) {
     d.close();
   }
 }
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === realpathSync(process.argv[1])
+) {
   try {
     console.log(JSON.stringify(health(process.argv[2], process.argv[3])));
   } catch {

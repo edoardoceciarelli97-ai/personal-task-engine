@@ -26,3 +26,8 @@ proof of provider revocation.
 
 Official procedure:
 https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms
+
+Resolve the current code directory before invoking the baseline CLI entry point:
+`node "$(readlink -f /opt/personal-task-engine/current)/cli.mjs" ...`.
+The readiness entry point itself resolves symlinks and is tested through the exact
+symlink invocation pattern used by systemd; unsafe storage must exit nonzero.
