@@ -126,6 +126,7 @@ export function safeDiagnostic(d = {}) {
     'INVALID_TEXT_DELTA',
     'DUPLICATE_TERMINAL',
     'INVALID_COMPLETED_RESPONSE',
+    'RESPONSE_MODEL_NOT_ATTESTED',
     'STREAM_NOT_COMPLETED',
     'OUTPUT_TEXT_MISMATCH',
     'OUTPUT_TEXT_MISSING',
@@ -399,8 +400,9 @@ export class Engine {
           response.requestedModel === 'gpt-6.1-sol',
         'INCOMPLETE_RESPONSE',
       );
+      // Do not accept a missing provider model as proof of Sol.
       requireTrue(
-        !response.observedModel || response.observedModel === 'gpt-6.1-sol',
+        response.observedModel === 'gpt-6.1-sol',
         'WRONG_MODEL',
       );
       responseEvidence = {

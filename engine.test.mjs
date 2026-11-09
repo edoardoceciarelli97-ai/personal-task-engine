@@ -294,3 +294,15 @@ test('CLI standalone account status never exposes credential fields', async (t) 
   assert.equal(status.subject, 'fixture-owner');
   assert.equal(JSON.stringify(status).includes('FIXTURE_SECRET'), false);
 });
+
+test('missing observed provider model cannot enter human verification as Sol', async (t) => {
+  const { e } = fixture(t);
+  const j = e.enqueue(job);
+  allow(e, j);
+  const result = await e.tick({
+    infer: async () => ({ ...(await good.infer()), observedModel: null })
+  },admission);
+  assert.equal(result.state,'UNCERTAIN');
+  assert.equal(e.job(j.id).attempts,1);
+  assert.equal(e.job(j.id).state,'UNCERTAIN');
+});
