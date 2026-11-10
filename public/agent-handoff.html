@@ -1,0 +1,10 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sol Workplace — Prova incarichi MCP</title><link rel="stylesheet" href="/agent-handoff.css"></head>
+<body><main><nav><a href="/">← Torna a Sol Workplace</a><strong>Sol Workplace · P7-B17</strong></nav>
+<h1>Incarichi dell'ufficio agenti</h1>
+<p class="subtitle">Importa un incarico autorizzato da Amazon OS tramite strumenti MCP locali, fallo analizzare da Sol con il tuo accesso personale, quindi esporta la risposta come <strong>bozza da approvare</strong>. Non vengono eseguite azioni Amazon.</p>
+<div class="warning">Questa operazione è <strong>manuale</strong>. Una richiesta reale al modello parte soltanto quando premi «Analizza una volta con Sol». Se l'invio è incerto, non ripetere.</div>
+<section><h2>1. Collegamento locale</h2><p id="status">Controllo in corso…</p><label for="market">Mercato</label><select id="market"><option value="AE">Emirati — AED</option><option value="IT">Italia — EUR</option></select><button id="load" type="button">Carica incarichi pendenti</button><div id="tasks" class="tasks"></div></section>
+<section><h2>2. Rivedi i dati da inviare al modello</h2><div id="preview">Seleziona un incarico qui sopra.</div><button id="analyze" disabled type="button" class="primary">Analizza UNA volta con Sol · confermo</button></section>
+<section><h2>3. Risposta ricevuta</h2><div id="answer">Nessuna nuova analisi avviata.</div><button id="export" disabled type="button" class="primary">Salva bozza nell'Office · confermo</button><p class="small">La bozza rimane in attesa di approvazione su Amazon OS; Sol Workplace non la pubblica autonomamente.</p></section>
+<section><h2>Storico e verifica</h2><button id="history" type="button">Aggiorna ricevute locali</button><div id="receipts"></div></section>
+<footer>Client OSS autonomo · SIWC personale · MCP locale limitato · Nessuna API commerciale · EVIENZA esclusa</footer></main><script src="/agent-handoff.js" type="module"></script></body></html>

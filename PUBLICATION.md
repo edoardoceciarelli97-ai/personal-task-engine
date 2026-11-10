@@ -17,3 +17,7 @@ Risolta l'ambiguità visuale di «Invia a Sol»: ora il pulsante diventa viola s
 ## P7-B15 — VM self-hosted owner-controlled (10 novembre 2026)
 
 Aggiunta CLI opt-in per importare sul runtime VM una copia protetta del grant SOLO della stessa app OSS, con host ID VM distinto, controllo path privato e controllo di non sovrascrittura. Non importa né pubblica credenziali reali; i test usano solo token sintetici. Questa release non avvia il server della VM, non esegue OAuth/inferenze e non autorizza la chat come API del gestionale proprietario. Test offline 41/41 PASS.
+
+## P7-B17 — Solo app OSS autonoma (owner handoff)
+
+Aggiunta una pagina facoltativa per importare/esportare **un singolo incarico alla volta su esplicita iniziativa del proprietario** mediante MCP stdio locale. Nessun proxy API per il gestionale, nessun trasferimento del piano o dei token a software proprietario, nessuna automazione AI senza consenso. Il provider si continua a contattare soltanto da Sol Workplace con SIWC diretto. Il client non fa ospitare al provider il server MCP. Applicazione non deployata e risultato GPT-6.1 Sol live con MCP non ancora osservato sul Mac dell'owner.

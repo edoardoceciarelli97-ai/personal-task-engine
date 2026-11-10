@@ -1,4 +1,4 @@
-# Sol Workplace — P7-B15 SIWC Owner-Controlled VM Readiness
+# Sol Workplace — P7-B17 Owner Agent MCP Handoff
 
 **Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.2 · **Licenza:** MIT · **Stato:** sorgente pubblico; la distribuzione non contiene credenziali né abilita automaticamente il provider. Una prova di risposta reale è stata documentata separatamente su un Mac dell’owner; le nuove installazioni e la VM richiedono verifiche proprie.
 
@@ -80,3 +80,22 @@ node src/owner-vm-import.mjs /percorso/privato/del/grant.json /var/lib/sol-workp
 **Non usare questo comando per ottenere un accesso non autorizzato**: l'app richiede ancora l'idoneità del piano, una verifica dell'installazione e il consenso dell'owner. La CLI non chiama OpenAI, non verifica i token presso il provider e non può attestare l'esito di una richiesta. Mantiene l'ID host VM distinto da quello Mac, impedisce la sovrascrittura di grant preesistenti e cancella solo la copia temporanea importata con successo. La copia originale sul Mac rimane invariata. Non trasferire mai password, cookie o token via chat. Non importare grant di Amazon OS proprietario, Personal Task Engine o EVIENZA.
 
 Guida ufficiale: https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms
+
+## P7-B17 — Agent Office owner handoff, opt-in locale
+
+La nuova pagina `/agent-handoff` permette al proprietario di selezionare un incarico tramite **MCP stdio locale**, verificare i dati che verranno inviati, autorizzare una sola inferenza diretta nell'app Sol Workplace e scegliere separatamente se esportare la risposta **come bozza** nel sistema esterno. La bozza va ancora approvata nell'Office.
+
+Il modello non chiama un server MCP ospitato nella Responses API: il **client locale** esegue i tool MCP `fetch_pending_tasks`, `read_task_status`, `read_product_context` e `post_agent_response`. La Responses API con SIWC mantiene `tools: []`, `store:false`, `stream:true`, `reasoning.effort=xhigh`; il risultato viene riconosciuto soltanto dopo `response.completed` con modello esattamente `gpt-6.1-sol` e `resp_...`. Non esiste endpoint di inferenza per Amazon OS, né una coda di inferenza background, né API key/fallback.
+
+**Disabilitato di default.** Solo quando il proprietario ha installato l'app OSS e il gestionale *sullo stesso computer sotto lo stesso utente* può impostare due variabili all'avvio:
+
+```
+SOL_WORKPLACE_AGENT_MCP_ENTRY=/percorso/owner/app/agent-office/mcp-stdio.mjs
+SOL_WORKPLACE_AGENT_DB_PATH=/percorso/owner/app/data/amazon-os-p2.sqlite
+```
+
+Il client non cerca database di altre applicazioni, non inoltra token SIWC, non attiva il modello da eventi o da richieste HTTP del gestionale e non esegue funzioni di acquisto o pubblicazione. Se i percorsi non sono normali file locali, se il task cambia o se manca un consenso, il flusso si ferma. Una risposta del modello dal provider non implica che l'applicazione esterna possa attestare il modello indipendentemente; la bozza resta non attestata nell'Office.
+
+**VM:** in una VM con utenti Linux separati, questi due percorsi non vanno resi leggibili allo stesso utente semplicemente modificando i permessi; serve un canale IPC privato e autenticato progettato a parte. Questa versione prova soltanto il percorso owner-controlled locale; non certifica cloud 24/7.
+
+I test inclusi sono sintetici: non creano un OAuth grant reale e non consumano il piano. L'idoneità OpenAI per ogni specifico uso dell'app va confermata dalle condizioni ufficiali, che vietano di usare l'accesso SIWC come API generica per altre applicazioni.

@@ -6,6 +6,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import {openStore,validateSnapshot,generateLocalCards,stampDraft,sampleCardSummary} from './core.mjs';
 import {getP7B9Readiness} from './p7b9-provider-contract.mjs';
 import {SiwcRuntime} from './siwc-runtime.mjs';
+import {OwnerAgentHandoff} from './owner-agent-handoff.mjs';
+import {localMcpConfig,callLocalMcp} from './mcp-local-client.mjs';
 const root=path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
 const listen=(s,port)=>new Promise((ok,bad)=>{s.once('error',bad);s.listen(port,'127.0.0.1',()=>ok(s.address().port));});
@@ -15,12 +17,13 @@ const limitBody=async(req,max=40000)=>{
   for await(const c of req){size+=c.length;if(size>max)throw Error('BODY_TOO_LARGE');chunks.push(c);}
   const str=Buffer.concat(chunks).toString('utf8');return JSON.parse(str);
 };
-export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true}={}) {
+export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true,agentMcpConfig=localMcpConfig(),agentMcpCall=callLocalMcp}={}) {
   if(!validPort(officePort)||!validPort(chatPort)||officePort===chatPort)throw Error('INVALID_OR_EQUAL_PORT');
   if(!stateDir||!path.isAbsolute(stateDir))throw Error('EXPLICIT_ABSOLUTE_STATE_DIRECTORY_REQUIRED');
   const store=await openStore(stateDir);
   const officeOrigin=`http://127.0.0.1:${officePort}`, chatOrigin=`http://127.0.0.1:${chatPort}`;
   const siwc=new SiwcRuntime({stateDir,chatOrigin,gateFile,fetcher:siwcFetcher});
+  const agentHandoff=new OwnerAgentHandoff({config:agentMcpConfig,siwc,store,mcpCall:agentMcpCall});
   const secret=randomBytes(32).toString('hex');
   const handler=(office)=>http.createServer(async(req,res)=>{
     const currentOrigin=office?officeOrigin:chatOrigin;
@@ -52,6 +55,14 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
         return res.end('Authorization processed. Open your standalone chat.');
       }catch{return answer(400,'Personal authorization did not complete. No inference started.','text/plain; charset=utf-8');}
     }
+    if(!office && u.pathname==='/api/agent-handoff/status' && req.method==='GET')
+      return j(200,{...agentHandoff.status(),grantReady:siwc.status().readyForInference});
+    if(!office && u.pathname==='/api/agent-handoff/pending' && req.method==='GET'){
+      try{return j(200,await agentHandoff.pending(u.searchParams.get('market')||'IT'));}
+      catch(e){return j(422,{error:/^[A-Z_]+$/.test(e.message)?e.message:'AGENT_DATA_NOT_AVAILABLE'});}
+    }
+    if(!office && u.pathname==='/api/agent-handoff/history' && req.method==='GET')
+      return j(200,await agentHandoff.history());
     if(!office && u.pathname==='/api/siwc/owner-state' && req.method==='GET')return j(200,siwc.status());
     if(!office && u.pathname==='/api/siwc/readiness' && req.method==='GET'){
       const base=getP7B9Readiness(),status=siwc.status();
@@ -86,6 +97,15 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
       let input;
       try{input=await limitBody(req);}catch(e){return j(e.message==='BODY_TOO_LARGE'?413:400,{error:'INVALID_JSON_OR_TOO_LARGE'});}
       try{
+        if(u.pathname.startsWith('/api/agent-handoff/')){
+          const action=u.pathname.slice('/api/agent-handoff/'.length);
+          if(!agentHandoff.status().configured)return j(423,{error:'LOCAL_OWNER_MCP_NOT_CONFIGURED',dispatched:false});
+          if(action==='preview')return j(200,await agentHandoff.preview(input));
+          if(action==='analyze')return j(200,await agentHandoff.analyze(input));
+          if(action==='export')return j(200,await agentHandoff.exportDraft(input));
+          if(action==='reconcile')return j(200,await agentHandoff.reconcileExport(input));
+          return j(404,{error:'UNKNOWN_AGENT_ACTION'});
+        }
         if(u.pathname==='/api/oauth/start'){
           if(!input||Object.keys(input).length!==0)return j(422,{error:'OWNER_INITIATED_EMPTY_LOGIN_ACTION_REQUIRED'});
           const grant=siwc.startLogin();
@@ -155,7 +175,7 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
     }
     if(u.pathname.startsWith('/api/'))return j(404,{error:'UNKNOWN_API_ROUTE'});
     if(!['GET','HEAD'].includes(req.method))return j(405,{error:'METHOD_NOT_ALLOWED'});
-    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css'};
+    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css','/agent-handoff':'public/agent-handoff.html','/agent-handoff.js':'public/agent-handoff.js','/agent-handoff.css':'public/agent-handoff.css'};
     const relative=routes[u.pathname];if(!relative)return answer(404,'Not Found','text/plain; charset=utf-8');
     try{
       let content=await fs.readFile(path.join(root,relative),'utf8');

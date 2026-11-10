@@ -98,10 +98,11 @@ export class SiwcRuntime {
   }
   async models(){const g=await this.grant();return {models:await catalog(g,this.fetcher),
      quotaRemaining:'NOT_EXPOSED_BY_PROVIDER'};}
-  async infer({text,snapshot=null,ownerConfirmed=false}={}){
+  async infer({text,snapshot=null,ownerConfirmed=false,source='OWNER_DIRECT_STANDALONE_UI'}={}){
     if(!this.gate.allowed)throw Error('OSS_DISTRIBUTION_NOT_ESTABLISHED');
     if(this.running)throw Error('SINGLE_ACTIVE_REQUEST_ONLY');
     if(!ownerConfirmed || !validPrompt(text))throw Error('EXPLICIT_OWNER_MESSAGE_REQUIRED');
+    if(!['OWNER_DIRECT_STANDALONE_UI','OWNER_SELECTED_LOCAL_MCP_TASK'].includes(source))throw Error('UNTRUSTED_REQUEST_ORIGIN');
     if(snapshot!==null && (typeof snapshot!=='object'||Array.isArray(snapshot)||JSON.stringify(snapshot).length>45000))throw Error('INVALID_OWNER_SNAPSHOT');
     this.running=true;
     try{
@@ -109,7 +110,7 @@ export class SiwcRuntime {
       const provider=new PlanProvider(g,this.fetcher);
       const result=await provider.infer({model:MODEL,role:'Sol Workplace Owner Analyst',version:'p7b10-v1',
         instructions:REQUEST_INSTRUCTIONS,input:{prompt:text.trim(),manualSnapshot:snapshot,
-        source:'OWNER_DIRECT_STANDALONE_UI',amazonDataVerified:false},documents:[],memory:[]},
+        source,amazonDataVerified:false},documents:[],memory:[]},
         {expiresAt:Math.min(Date.now()+90_000,g.expiresAt)});
       if(result.completed!==true||result.requestedModel!==MODEL||result.observedModel!==MODEL||
         !/^resp_[A-Za-z0-9_-]{1,200}$/.test(result.id||''))throw Error('SOL_RESPONSE_NOT_ATTESTED');
