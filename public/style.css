@@ -4,3 +4,12 @@
 .p7b9-status {margin-top:12px; padding-top:12px; border-top:1px solid var(--border,#e1e5ed)}
 .p7b9-status p {margin-top:6px;margin-bottom:8px}
 .p7b9-status a {font-size:12px;color:var(--purple,#6959b7)}
+
+/* P7-B14: visible, accessible, state-based send and refresh controls. */
+.button-line #send:disabled {background:#e7e8ef;color:#8992a2;cursor:not-allowed;opacity:.60;}
+.button-line #send:not(:disabled) {background:#6651cc;color:#fff;opacity:1;cursor:pointer;border:1px solid #5946b6;box-shadow:0 2px 9px #6752cc30;}
+.button-line #send:not(:disabled):hover {background:#5342b7;}
+.button-line #send:focus-visible,.outline:focus-visible{outline:3px solid #b9afff;outline-offset:2px;}
+.status-tag.connected {background:#eeeaff;color:#5342b7;}
+#refresh-feedback {color:#5d6685;min-height:1.2em;font-size:10px;line-height:1.6;}
+#refresh:disabled {opacity:.65;cursor:progress;}

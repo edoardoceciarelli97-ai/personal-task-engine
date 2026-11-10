@@ -1,6 +1,6 @@
-# Sol Workplace — P7-B10 SIWC Owner Connection Candidate
+# Sol Workplace — P7-B14 SIWC Owner Connection & UI State
 
-**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.0 · **Licenza:** MIT · **Stato:** sorgente pubblico; nessun OAuth live verificato, nessun accesso reale al piano e nessuna inferenza reale eseguita.
+**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.1 · **Licenza:** MIT · **Stato:** sorgente pubblico; nessun OAuth live verificato, nessun accesso reale al piano e nessuna inferenza reale eseguita.
 
 Questa applicazione è una chat locale autonoma in italiano. Il suo codice è separato dal gestionale proprietario Amazon AI Business OS. Quando avviata dall'utente, funziona da sola su `http://127.0.0.1:4278`: non richiede né espone API del gestionale proprietario e non trasferisce token ChatGPT all'Office. L'Office può mostrare la UI in una cornice, ma non può utilizzare il suo accesso SIWC come proxy.
 
@@ -63,3 +63,8 @@ npm run verify
 ```
 
 Questa branch GitHub e un tree indipendente dal ramo `main` di Personal Task Engine. Non autorizza ne prova l'idoneita SIWC per l'incorporamento in software proprietario.
+
+
+## P7-B14 — Interfaccia del collegamento
+
+La UI distingue un OAuth collegato da una risposta modello autentica. Il tasto «Verifica stato locale» conferma visibilmente l'orario dell'ultimo controllo. «Invia a Sol» diventa viola solo quando `canSendToSol`, `planConnected`, la sessione locale e il testo della richiesta sono tutti presenti; non invia nulla automaticamente. I messaggi restano inviati soltanto dal client locale OSS, non da Amazon OS. Il backend e i token non sono stati modificati.

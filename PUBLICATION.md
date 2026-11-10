@@ -9,3 +9,7 @@ Origine: archivio P7-B10 OSS Review Source, SHA256 `e64c17f026cf4daeecf15565b687
 Stato runtime: il codice supporta il flusso di connessione SIWC ma non e stata verificata una richiesta real-world del modello. Nessun servizio e stato distribuito e non vengono effettuate inferenze, pubblicazioni Amazon o spese automaticamente.
 
 La branch `sol-workplace-oss` e isolata da `main`: contiene SOLO il tree sorgente del client indipendente; nessuna modifica a `main` o al codice di Personal Task Engine. Un repository con nome dedicato potra essere creato successivamente se necessario, senza alterare questa versione.
+
+## Correzione P7-B14 (10 novembre 2026)
+
+Risolta l'ambiguità visuale di «Invia a Sol»: ora il pulsante diventa viola solo con OAuth valido, autorizzazione d'invio e messaggio scritto. «Verifica stato locale» conferma l'aggiornamento con orario. Banner e istruzioni distinguono accesso personale da risposta reale di Sol. Non è stata modificata alcuna funzione SIWC, invio backend o condivisione di credenziali. La risposta autentica del provider resta da verificare con un clic umano separato.
