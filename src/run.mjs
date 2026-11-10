@@ -1,0 +1,10 @@
+import { createPair } from './server.mjs';
+import os from 'node:os';
+import path from 'node:path';
+const officePort=Number(process.env.P7B5_OFFICE_PORT||4277);
+const chatPort=Number(process.env.P7B5_CHAT_PORT||4278);
+const stateDir=process.env.P7B5_STATE_DIR||path.join(os.homedir(),'.sol-workplace-p7b5');
+const gateFile=process.env.SOL_WORKPLACE_PUBLISHED_OSS_EVIDENCE || null;
+const svc=await createPair({officePort,chatPort,stateDir,gateFile,officeDemo:process.env.SOL_WORKPLACE_OFFICE_DEMO==='1'});
+process.stdout.write(`OFFICE_SIMULATION=${svc.officeOrigin||'DISABLED'}\nSTANDALONE_CHAT=${svc.chatOrigin}\nSTATE_DIR=${stateDir}\nSIWC=OWNER_CONTROLLED_ONLY_ON_PUBLISHED_OSS\n`);
+for(const signal of ['SIGTERM','SIGINT'])process.once(signal,async()=>{await svc.close();process.exit(0)});

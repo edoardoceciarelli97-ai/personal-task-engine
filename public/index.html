@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sol Workplace — Candidato autonomo P7-B5</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand-symbol" aria-hidden="true">✦</div>
+    <div class="brand"><div>Sol Workplace <span class="small-version">P7-B10</span></div><small>AI Business Manager · applicazione autonoma candidata OSS</small></div>
+    <div class="pill"><span class="dot"></span><span id="connection">Sol non connesso</span></div>
+  </header>
+  <div class="content">
+    <section class="workpanel" aria-label="Conversazioni">
+      <div class="panel-head"><div><p class="eyebrow">WORKSPACE / CONVERSAZIONI</p><h1>Parla con il tuo AI Manager</h1><p class="muted">La chat autonoma può usare il piano ChatGPT soltanto dopo la sua effettiva pubblicazione open source e l’autorizzazione personale.</p></div><span class="status-tag">OFFLINE</span></div>
+      <div id="conversation" class="conversation" aria-live="polite"><div class="empty"><div class="empty-icon">✧</div><h2>La tua conversazione inizia qui</h2><p>Puoi preparare e salvare richieste. Non verranno inviate a OpenAI finché l'accesso non sarà autorizzato.</p></div></div>
+      <div class="composer">
+        <label for="message">Messaggio per Sol — bozza privata</label>
+        <textarea id="message" rows="3" maxlength="4000" placeholder="Es. Analizza le vendite UAE, individua gli SKU con margini critici e proponi le prossime azioni..." aria-describedby="composer-info"></textarea>
+        <div class="composer-actions"><span id="composer-info">Nessuna richiesta AI inviata</span><div class="button-line"><button id="save" type="button" class="primary">Salva bozza</button><button id="send" type="button" disabled title="Connessione SIWC non verificata">Invia a Sol <span class="lock">⌁</span></button></div></div>
+      </div>
+    </section>
+    <aside class="sidebar" aria-label="Dati e autorizzazioni">
+      <div class="panel statpanel"><p class="eyebrow">STATO DEL COLLEGAMENTO</p><div class="statusline"><span class="status-icon">🔒</span><strong>In attesa di autorizzazione</strong></div><p class="muted">Nessun token ChatGPT e nessuna API a consumo. Il programma non eredita accessi dalle altre applicazioni.</p><button type="button" id="refresh" class="outline">Verifica stato locale</button><button type="button" id="login" class="outline" disabled>Continua con ChatGPT</button><div id="oauth-link" class="minor" aria-live="polite"></div><p id="verification" class="minor"></p><section class="p7b9-status" aria-label="Idoneità SIWC P7-B10"><strong>Verifica dell’idoneità</strong><p id="p7b9-gate-status" class="minor" aria-live="polite">Connessione non attivabile: verifica OpenAI ancora necessaria.</p><a href="https://developers.openai.com/siwc/token-sharing-open-source" target="_blank" rel="noopener noreferrer">Requisiti ufficiali SIWC</a></section></div>
+      <div class="panel"><p class="eyebrow">IMPORTAZIONE MANUALE</p><h3>Snapshot dei dati</h3><p class="muted">Seleziona un JSON limitato a SKU, unità, ricavi, costi e scorte. Non caricare credenziali o dati dei clienti.</p><label for="file" class="upload"> <span aria-hidden="true">↑</span> Seleziona file JSON </label><input id="file" type="file" accept=".json,application/json"><button type="button" id="import" class="outline" disabled>Importa dati selezionati</button><p id="import-info" class="minor">Nessun file selezionato</p></div>
+      <div class="panel"><p class="eyebrow">CONTROLLO SENZA AI</p><h3>Segnali dai dati importati</h3><p class="muted">Regole semplici e dichiarate: stock zero, costi mancanti e contribuzione dichiarata negativa. Non sono analisi di Sol.</p><select id="snapshot-select" aria-label="Seleziona snapshot"><option value="">Nessuno snapshot importato</option></select><button type="button" id="check" disabled class="outline purple">Esegui controllo locale</button><div id="signals" class="signals" aria-live="polite"></div></div>
+    </aside>
+  </div>
+  <footer><span>Applicazione candidata MIT · runtime locale 127.0.0.1</span><span>OWNER CONTROLLED · NO AMAZON WRITES · NO API A PAGAMENTO</span></footer>
+</div>
+<script src="/app.js" type="module"></script>
+</body></html>

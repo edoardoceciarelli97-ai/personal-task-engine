@@ -1,20 +1,16 @@
 {
-  "name": "personal-task-engine",
-  "version": "0.1.0",
+  "name": "sol-workplace-oss-standalone",
+  "version": "0.4.0",
+  "type": "module",
   "private": true,
   "license": "MIT",
-  "type": "module",
+  "description": "Standalone open-source owner-controlled Sol Workplace SIWC client, not an API proxy for Amazon OS",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24"
   },
   "scripts": {
-    "test": "node --test *.test.mjs"
-  },
-  "description": "Standalone owner-directed task queue with direct Sign in with ChatGPT support",
-  "author": "edoardoceciarelli97-ai",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/edoardoceciarelli97-ai/personal-task-engine.git"
-  },
-  "homepage": "https://github.com/edoardoceciarelli97-ai/personal-task-engine"
+    "test": "node --test tests/*.test.mjs",
+    "verify": "node --check src/server.mjs && node --check src/siwc-runtime.mjs && node --check src/pte-core/siwc.mjs && node --check public/app.js && npm test",
+    "start": "node src/run.mjs"
+  }
 }

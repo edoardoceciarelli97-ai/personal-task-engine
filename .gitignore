@@ -1,7 +1,12 @@
+.local-state/
 node_modules/
-.state/
-*.sqlite*
-grant.json
-host.json
-pending.json*
-*.new
+.env
+*.pem
+*token*
+*.sqlite
+.DS_Store
+
+# P7-B10 owner-only credentials and eligibility
+.siwc-state/
+siwc-published-evidence.json
+*.token
