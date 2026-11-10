@@ -44,7 +44,9 @@ test('P7-B21 all 28 tests proceed in serial, with original receipt and no automa
  const {s,calls,dir}=setup(t);await s.authorize(consent);await until(s,['COMPLETED_AWAITING_INDEPENDENT_REVIEW']);
  assert.equal(calls.length,28);assert.equal(new Set(calls).size,28);assert.equal(s.publicStatus().completed,28);
  const report=s.report();assert.equal(report.attempts.length,28);assert.equal(report.certifiedRoles,0);assert.equal(report.independentProviderVerification,false);
- assert.equal(report.attempts[0].observedModel,'gpt-6.1-sol');assert.match(report.attempts[0].responseId,/^resp_/);
+ assert.equal(report.attempts[0].observedModel,'gpt-6.1-sol');
+ assert.equal(report.attempts[0].examId,'director-simple');assert.equal(report.attempts[0].ownerPromptSha256,undefined);
+ assert.equal(report.version,'P7-B19-EXAM-RECEIPTS-V1');assert.match(report.attempts[0].responseId,/^resp_/);
  assert.equal(JSON.stringify(report).includes('refreshToken'),false);
  assert.equal(fs.statSync(path.join(dir,'owner-exam-session.json')).mode&0o077,0);
  await assert.rejects(s.authorize(consent),/SESSION_ALREADY_USED_OR_BLOCKED/);

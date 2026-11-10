@@ -37,7 +37,7 @@
     "src/core.mjs": "1709b6b0944db393e06fafb6506b9aedc5eaacc06d7de5b63e46ba5acbfb8c89",
     "src/mcp-local-client.mjs": "fdeb40885e1e2f9550177cf703483802db3aa117ff78a0149fee207c22fc6a98",
     "src/owner-agent-handoff.mjs": "36e9eb47d538874d142e57707aeaafe3d7b9f038ca454eb05abb3a92cf0d65c1",
-    "src/owner-exam-session.mjs": "ce4b01ba820892cc4a8f9ca272309f4900973861b325d5cea64dafb54246b558",
+    "src/owner-exam-session.mjs": "2815679a5eaa0550f141261806ee94c4aa5bacc879758a8ee9febc647b6a0e71",
     "src/owner-vm-import.mjs": "f11a15de40cfceb4a3712db09196ec9b40f220e336a7a1021e675d138a39a86e",
     "src/p7b9-provider-contract.mjs": "3c40749d12057bda0f649a39c8b0c5a2d15b5252eaa3b65fad77f9385fc16523",
     "src/pte-core/LICENSE": "8eeb4d0ef340ec955cc166ff2e271b31a48204ddd916d31128974640287f923d",
@@ -57,7 +57,7 @@
     "tests/p7b14-ui.test.mjs": "e27552197d220640e14dfd8cfa22230aab6eedaca233786ebab5582bc57000ed",
     "tests/p7b15-vm-import.test.mjs": "d4517f72ba4195b46af72ab1e2e969c5ade2ea474338291bb881c42a01bd9052",
     "tests/p7b17-owner-agent-handoff.test.mjs": "57fe683987744242c108bc96d7685011d783ca54a372b8a03449d727a29158c8",
-    "tests/p7b21-automatic-exams.test.mjs": "7b44024ed72cbb70e22d721484af75de0cf76d4254dc09ec8445c06a18009336",
+    "tests/p7b21-automatic-exams.test.mjs": "33ba0a98f2a613700904fe83d1c2f5136150bd0fa082b93610ce63391554da71",
     "tests/p7b9-provider-contract.test.mjs": "6a12030fc8acaf5015200877ffa2891a68e41621c270cff009cc11f2f7919e1b",
     "tests/p7b9-provider-http.test.mjs": "e77d88f62170d68b92decb821df23f7643ca3915380a0a95b2ed2db730bdbd9d"
   }

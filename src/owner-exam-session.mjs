@@ -85,11 +85,23 @@ export class OwnerExamSession {
   promptPreview(){return this.exams.map(x=>({id:x.id,roleId:x.roleId,difficulty:x.difficulty,market:x.market,
     prompt:x.prompt,promptSha256:x.promptSha256}));}
   report(){
-    return {kind:'SOL_WORKPLACE_OWNER_CLIENT_ATTESTED_EXAMS_NOT_OPENAI_SIGNED',suite:'P7-B19-FROZEN-28',
+    const attempts=this.state.results.filter(r=>r.status==='CLIENT_ATTESTED_AWAITING_REVIEW').map(r=>({
+      examId:r.id,roleId:r.roleId,market:r.market,difficulty:r.difficulty,
+      expectedModel:MODEL,observedModel:r.observedModel,responseId:r.responseId,
+      ownerRequestAt:r.reservedAt,responseAt:r.recordedAt,
+      ownerPromptSha256:this.exams.find(e=>e.id===r.id)?.promptSha256,
+      answer:r.answer,answerSha256:r.answerSha256,
+      source:'OWNER_LOCAL_SOL_WORKPLACE_EXAM_SESSION',status:'CLIENT_ATTESTED_AWAITING_INDEPENDENT_REVIEW',
+      providerSignatureVerified:false,independentOpenAIVerification:false,
+      xhighRequestedByExistingClientContract:true,xhighObservedInReceipt:false,
+      certified:false,hasAccessToSellerCentral:false
+    }));
+    return {version:'P7-B19-EXAM-RECEIPTS-V1',
+      kind:'SOL_WORKPLACE_OWNER_CLIENT_ATTESTED_EXAMS_NOT_OPENAI_SIGNED',suite:'P7-B19-FROZEN-28',
       generatedAt:new Date().toISOString(),packDigest:PIN,runId:this.state.runId,status:this.state.status,
       expectedModel:MODEL,reasoningRequested:'xhigh',reasoningObservedIndependently:false,
-      attempts:this.state.results.filter(r=>r.status==='CLIENT_ATTESTED_AWAITING_REVIEW').map(r=>({...r,
-        ownerPromptSha256:this.exams.find(e=>e.id===r.id)?.promptSha256})),
+      verifiedClientPairs:attempts.length,expectedExams:28,
+      pendingExams:this.exams.filter(e=>!attempts.some(a=>a.examId===e.id)).map(e=>e.id),attempts,
       passedEvaluations:0,certifiedRoles:0,independentProviderVerification:false,
       userMustReviewBeforeSharing:true,noTokenExport:true};
   }
