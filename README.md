@@ -99,3 +99,20 @@ Il client non cerca database di altre applicazioni, non inoltra token SIWC, non 
 **VM:** in una VM con utenti Linux separati, questi due percorsi non vanno resi leggibili allo stesso utente semplicemente modificando i permessi; serve un canale IPC privato e autenticato progettato a parte. Questa versione prova soltanto il percorso owner-controlled locale; non certifica cloud 24/7.
 
 I test inclusi sono sintetici: non creano un OAuth grant reale e non consumano il piano. L'idoneità OpenAI per ogni specifico uso dell'app va confermata dalle condizioni ufficiali, che vietano di usare l'accesso SIWC come API generica per altre applicazioni.
+
+
+## P7-B21 — Prima sessione d'esami dell'utente (feature OSS, limitata)
+
+Sol Workplace 0.6.0 include una pagina locale `http://127.0.0.1:4278/academy` per una **suite di 28 esami professionali sintetici** del titolare, avviabile con un unico consenso esplicito. La logica di esecuzione vive interamente in questa applicazione indipendente e utilizza unicamente `SiwcRuntime.infer` già autorizzato.
+
+- Il materiale d'esame **non è incluso in questo repository pubblico**: il titolare lo conserva localmente in file privato (0700/0600). Il codice controlla il digest esatto della suite congelata e non offre endpoint generici di inferenza a software esterni.
+- Invia richieste solo dopo un clic di conferma dalla pagina locale. Max 28, una per volta, 10 secondi minimi fra gli invii (oltre alla durata delle richieste), zero retry o pianificazione ricorrente. L'owner può chiedere una pausa in ogni momento; la richiesta già in corso può finire.
+- Ogni invio viene riservato e persistito prima di contattare il provider. Un errore in fase incerta o un arresto del processo durante una richiesta *blocca* la ripetizione automatica. Dopo una pausa sicura, la ripresa richiede un consenso esplicito separato.
+- Il client richiede il modello esatto `gpt-6.1-sol` e l'effort `xhigh`, ma la sola risposta non attesta autonomamente l'effort interno. Accetta soltanto la risposta completata che supera il controllo già implementato in SiwcRuntime.
+- I dati e le risposte originali sono salvati nel solo runtime privato dell'utente, senza esportare password/token/chiavi. L'utente può scaricare un JSON delle ricevute e sottoporlo a valutazione indipendente.
+- **Non certifica né attiva alcun agente**. Nessun accesso Seller Central, Amazon Ads, nessuna API a consumo, nessuna modifica nel gestionale proprietario. L'uso del piano ChatGPT resta limitato all'app SIWC collegata e alle automazioni espressamente autorizzate.
+- La presenza della feature non certifica l'ammissione del provider, la disponibilità di quota o la capacità di funzionare senza il runtime locale acceso.
+
+Avvio su Mac con kit privato owner-controlled: il launcher installa soltanto la nuova versione OSS e il pack d'esame in cartella privata, preservando lo stesso vault e il vecchio archivio. Non pubblicare il pack privato o l'intero sistema Amazon OS su GitHub.
+
+Fonti: https://openai.com/policies/sign-in-with-chatgpt-terms/ ; https://developers.openai.com/siwc/token-sharing-open-source

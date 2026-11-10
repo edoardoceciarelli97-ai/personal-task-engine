@@ -1,16 +1,16 @@
 {
   "name": "sol-workplace-oss-standalone",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "private": true,
   "license": "MIT",
-  "description": "Standalone open-source owner-controlled Sol Workplace SIWC client, not an API proxy for Amazon OS",
+  "description": "Standalone OSS owner-controlled Sol Workplace SIWC client with first-party, explicitly consented bounded assessments; never a general API for Amazon OS",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "verify": "node --check src/server.mjs && node --check src/siwc-runtime.mjs && node --check src/pte-core/siwc.mjs && node --check public/app.js && npm test",
+    "verify": "node --check src/server.mjs && node --check src/siwc-runtime.mjs && node --check src/pte-core/siwc.mjs && node --check public/app.js && node --check src/owner-exam-session.mjs && node --check public/academy.js && npm test",
     "start": "node src/run.mjs",
     "import:vm": "node src/owner-vm-import.mjs"
   }

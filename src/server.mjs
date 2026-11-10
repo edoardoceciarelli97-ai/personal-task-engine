@@ -7,6 +7,7 @@ import {openStore,validateSnapshot,generateLocalCards,stampDraft,sampleCardSumma
 import {getP7B9Readiness} from './p7b9-provider-contract.mjs';
 import {SiwcRuntime} from './siwc-runtime.mjs';
 import {OwnerAgentHandoff} from './owner-agent-handoff.mjs';
+import {OwnerExamSession} from './owner-exam-session.mjs';
 import {localMcpConfig,callLocalMcp} from './mcp-local-client.mjs';
 const root=path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
@@ -17,13 +18,14 @@ const limitBody=async(req,max=40000)=>{
   for await(const c of req){size+=c.length;if(size>max)throw Error('BODY_TOO_LARGE');chunks.push(c);}
   const str=Buffer.concat(chunks).toString('utf8');return JSON.parse(str);
 };
-export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true,agentMcpConfig=localMcpConfig(),agentMcpCall=callLocalMcp}={}) {
+export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true,agentMcpConfig=localMcpConfig(),agentMcpCall=callLocalMcp,ownerExamPackFile=null,ownerExamDelayMs=10000}={}) {
   if(!validPort(officePort)||!validPort(chatPort)||officePort===chatPort)throw Error('INVALID_OR_EQUAL_PORT');
   if(!stateDir||!path.isAbsolute(stateDir))throw Error('EXPLICIT_ABSOLUTE_STATE_DIRECTORY_REQUIRED');
   const store=await openStore(stateDir);
   const officeOrigin=`http://127.0.0.1:${officePort}`, chatOrigin=`http://127.0.0.1:${chatPort}`;
   const siwc=new SiwcRuntime({stateDir,chatOrigin,gateFile,fetcher:siwcFetcher});
   const agentHandoff=new OwnerAgentHandoff({config:agentMcpConfig,siwc,store,mcpCall:agentMcpCall});
+  const academy=ownerExamPackFile ? await new OwnerExamSession({stateDir,packFile:ownerExamPackFile,siwc,waitMs:ownerExamDelayMs}).init():null;
   const secret=randomBytes(32).toString('hex');
   const handler=(office)=>http.createServer(async(req,res)=>{
     const currentOrigin=office?officeOrigin:chatOrigin;
@@ -64,6 +66,14 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
     if(!office && u.pathname==='/api/agent-handoff/history' && req.method==='GET')
       return j(200,await agentHandoff.history());
     if(!office && u.pathname==='/api/siwc/owner-state' && req.method==='GET')return j(200,siwc.status());
+
+    if(!office && u.pathname==='/api/academy/status' && req.method==='GET')
+      return j(200,academy ? academy.publicStatus():{state:'EXAM_PACK_NOT_INSTALLED',total:0,noPaidApi:true});
+    if(!office && u.pathname==='/api/academy/prompts' && req.method==='GET')
+      return academy ? j(200,{suite:'P7-B19-FROZEN-28',exams:academy.promptPreview()}):j(404,{error:'OWNER_EXAM_PACK_NOT_INSTALLED'});
+    if(!office && u.pathname==='/api/academy/report' && req.method==='GET')
+      return academy ? j(200,academy.report()):j(404,{error:'OWNER_EXAM_PACK_NOT_INSTALLED'});
+
     if(!office && u.pathname==='/api/siwc/readiness' && req.method==='GET'){
       const base=getP7B9Readiness(),status=siwc.status();
       return j(200,status.eligibleAppDeclared?{
@@ -97,6 +107,18 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
       let input;
       try{input=await limitBody(req);}catch(e){return j(e.message==='BODY_TOO_LARGE'?413:400,{error:'INVALID_JSON_OR_TOO_LARGE'});}
       try{
+        if(u.pathname.startsWith('/api/academy/')){
+          if(!academy)return j(423,{error:'OWNER_EXAM_PACK_NOT_INSTALLED',dispatched:false});
+          if(u.pathname==='/api/academy/start'){
+            if(!input||Object.keys(input).sort().join(',')!=='confirmation,maxRequests,packDigest')return j(422,{error:'EXPLICIT_28_EXAM_CONSENT_REQUIRED',dispatched:false});
+            return j(202,await academy.authorize(input));
+          }
+          if(u.pathname==='/api/academy/stop'){
+            if(!input||Object.keys(input).length!==1||input.confirmStop!==true)return j(422,{error:'EXPLICIT_STOP_REQUIRED'});
+            return j(200,await academy.stop());
+          }
+          return j(404,{error:'UNKNOWN_ACADEMY_ACTION'});
+        }
         if(u.pathname.startsWith('/api/agent-handoff/')){
           const action=u.pathname.slice('/api/agent-handoff/'.length);
           if(!agentHandoff.status().configured)return j(423,{error:'LOCAL_OWNER_MCP_NOT_CONFIGURED',dispatched:false});
@@ -175,7 +197,7 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
     }
     if(u.pathname.startsWith('/api/'))return j(404,{error:'UNKNOWN_API_ROUTE'});
     if(!['GET','HEAD'].includes(req.method))return j(405,{error:'METHOD_NOT_ALLOWED'});
-    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css','/agent-handoff':'public/agent-handoff.html','/agent-handoff.js':'public/agent-handoff.js','/agent-handoff.css':'public/agent-handoff.css'};
+    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css','/agent-handoff':'public/agent-handoff.html','/agent-handoff.js':'public/agent-handoff.js','/agent-handoff.css':'public/agent-handoff.css','/academy':'public/academy.html','/academy.js':'public/academy.js','/academy.css':'public/academy.css'};
     const relative=routes[u.pathname];if(!relative)return answer(404,'Not Found','text/plain; charset=utf-8');
     try{
       let content=await fs.readFile(path.join(root,relative),'utf8');
