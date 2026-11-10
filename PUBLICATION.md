@@ -13,3 +13,7 @@ La branch `sol-workplace-oss` e isolata da `main`: contiene SOLO il tree sorgent
 ## Correzione P7-B14 (10 novembre 2026)
 
 Risolta l'ambiguità visuale di «Invia a Sol»: ora il pulsante diventa viola solo con OAuth valido, autorizzazione d'invio e messaggio scritto. «Verifica stato locale» conferma l'aggiornamento con orario. Banner e istruzioni distinguono accesso personale da risposta reale di Sol. Non è stata modificata alcuna funzione SIWC, invio backend o condivisione di credenziali. La risposta autentica del provider resta da verificare con un clic umano separato.
+
+## P7-B15 — VM self-hosted owner-controlled (10 novembre 2026)
+
+Aggiunta CLI opt-in per importare sul runtime VM una copia protetta del grant SOLO della stessa app OSS, con host ID VM distinto, controllo path privato e controllo di non sovrascrittura. Non importa né pubblica credenziali reali; i test usano solo token sintetici. Questa release non avvia il server della VM, non esegue OAuth/inferenze e non autorizza la chat come API del gestionale proprietario. Test offline 41/41 PASS.

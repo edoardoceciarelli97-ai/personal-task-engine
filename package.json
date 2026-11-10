@@ -1,6 +1,6 @@
 {
   "name": "sol-workplace-oss-standalone",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "module",
   "private": true,
   "license": "MIT",
@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "verify": "node --check src/server.mjs && node --check src/siwc-runtime.mjs && node --check src/pte-core/siwc.mjs && node --check public/app.js && npm test",
-    "start": "node src/run.mjs"
+    "start": "node src/run.mjs",
+    "import:vm": "node src/owner-vm-import.mjs"
   }
 }

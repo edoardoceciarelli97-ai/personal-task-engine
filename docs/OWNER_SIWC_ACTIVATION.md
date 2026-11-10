@@ -43,3 +43,17 @@ Per una VM privata conforme alla documentazione self-hosted, il callback `127.0.
 - Attestare `SOL_LIVE=YES` basandosi su mock, catalogo pubblico o sola concessione OAuth.
 
 Provider docs: https://developers.openai.com/siwc/token-sharing-open-source ; https://developers.openai.com/siwc/token-sharing-open-source/sign-in ; https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms ; https://openai.com/policies/sign-in-with-chatgpt-terms/
+
+## P7-B15 — Percorso self-hosted VM secondo OpenAI
+
+Conservare localmente la registrazione dell'**app Sol Workplace** e il suo ID client rilasciato da OpenAI. Preparare un host ID VM distinto e conservarlo nel vault locale della VM. La procedura ufficiale prevede OAuth nel browser locale e il trasferimento **protetto** delle credenziali selezionate verso l'istanza della medesima app su VM owner-controlled, ad esempio via SSH; i limiti del piano rimangono condivisi.
+
+La CLI per importare una copia temporanea protetta nel vault VM è:
+
+```sh
+node src/owner-vm-import.mjs /private/transfer/grant.json /var/lib/sol-workplace/siwc-credentials --owner-reviewed
+```
+
+Richiede esecuzione come utente POSIX non-root dedicato alla sola app OSS, cartella trasferimento di proprietà dello stesso utente con permessi 0700, file 0600, fonte verificata del medesimo client. Non scrive token in output, log o browser e rifiuta percorsi simbolici; conserva il nuovo ID host VM. L'owner deve prima predisporre il trasferimento dal proprio Mac sul canale SSH sicuro. L'applicazione resta autonoma e non apre un endpoint proxy per Amazon OS. Nessun consenso background o inferenza viene concesso dalla sola importazione.
+
+Guida OpenAI: https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms

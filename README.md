@@ -1,6 +1,6 @@
-# Sol Workplace — P7-B14 SIWC Owner Connection & UI State
+# Sol Workplace — P7-B15 SIWC Owner-Controlled VM Readiness
 
-**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.1 · **Licenza:** MIT · **Stato:** sorgente pubblico; nessun OAuth live verificato, nessun accesso reale al piano e nessuna inferenza reale eseguita.
+**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.2 · **Licenza:** MIT · **Stato:** sorgente pubblico; la distribuzione non contiene credenziali né abilita automaticamente il provider. Una prova di risposta reale è stata documentata separatamente su un Mac dell’owner; le nuove installazioni e la VM richiedono verifiche proprie.
 
 Questa applicazione è una chat locale autonoma in italiano. Il suo codice è separato dal gestionale proprietario Amazon AI Business OS. Quando avviata dall'utente, funziona da sola su `http://127.0.0.1:4278`: non richiede né espone API del gestionale proprietario e non trasferisce token ChatGPT all'Office. L'Office può mostrare la UI in una cornice, ma non può utilizzare il suo accesso SIWC come proxy.
 
@@ -68,3 +68,15 @@ Questa branch GitHub e un tree indipendente dal ramo `main` di Personal Task Eng
 ## P7-B14 — Interfaccia del collegamento
 
 La UI distingue un OAuth collegato da una risposta modello autentica. Il tasto «Verifica stato locale» conferma visibilmente l'orario dell'ultimo controllo. «Invia a Sol» diventa viola solo quando `canSendToSol`, `planConnected`, la sessione locale e il testo della richiesta sono tutti presenti; non invia nulla automaticamente. I messaggi restano inviati soltanto dal client locale OSS, non da Amazon OS. Il backend e i token non sono stati modificati.
+
+## P7-B15 — Migrazione autorizzata alla VM self-hosted
+
+La CLI `src/owner-vm-import.mjs` importa esclusivamente una **copia protetta** del grant di **questa stessa app Sol Workplace**, ottenuto dall'owner mediante il flusso OAuth ufficiale e trasferito via SSH secondo la guida self-hosted OpenAI. Deve essere invocata solo come utente Linux dedicato `sol-workplace`, con `--owner-reviewed` e file sorgente in cartella privata 0700/file 0600.
+
+```sh
+node src/owner-vm-import.mjs /percorso/privato/del/grant.json /var/lib/sol-workplace/siwc-credentials --owner-reviewed
+```
+
+**Non usare questo comando per ottenere un accesso non autorizzato**: l'app richiede ancora l'idoneità del piano, una verifica dell'installazione e il consenso dell'owner. La CLI non chiama OpenAI, non verifica i token presso il provider e non può attestare l'esito di una richiesta. Mantiene l'ID host VM distinto da quello Mac, impedisce la sovrascrittura di grant preesistenti e cancella solo la copia temporanea importata con successo. La copia originale sul Mac rimane invariata. Non trasferire mai password, cookie o token via chat. Non importare grant di Amazon OS proprietario, Personal Task Engine o EVIENZA.
+
+Guida ufficiale: https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms
