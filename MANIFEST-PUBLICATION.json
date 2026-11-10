@@ -42,7 +42,7 @@
     "src/mcp-local-client.mjs": "fdeb40885e1e2f9550177cf703483802db3aa117ff78a0149fee207c22fc6a98",
     "src/owner-agent-handoff.mjs": "36e9eb47d538874d142e57707aeaafe3d7b9f038ca454eb05abb3a92cf0d65c1",
     "src/owner-exam-session.mjs": "2815679a5eaa0550f141261806ee94c4aa5bacc879758a8ee9febc647b6a0e71",
-    "src/owner-role-chat.mjs": "687ae673a0bbaa3eaa4835115f4b6197324399052b919847830d43564c518849",
+    "src/owner-role-chat.mjs": "4ff4c79b2ccee0d7ff91182890fd194cdcd518973910fd838f058f24e828fd7d",
     "src/owner-vm-import.mjs": "f11a15de40cfceb4a3712db09196ec9b40f220e336a7a1021e675d138a39a86e",
     "src/p7b9-provider-contract.mjs": "3c40749d12057bda0f649a39c8b0c5a2d15b5252eaa3b65fad77f9385fc16523",
     "src/pte-core/LICENSE": "8eeb4d0ef340ec955cc166ff2e271b31a48204ddd916d31128974640287f923d",

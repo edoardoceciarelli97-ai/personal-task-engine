@@ -34,7 +34,7 @@ export class OwnerRoleChat {
     if(!siwc||typeof siwc.infer!=='function'||typeof siwc.status!=='function')err('FIRST_PARTY_SIWC_REQUIRED');
     this.stateDir=stateDir;this.packFile=packFile;this.siwc=siwc;
     this.file=path.join(stateDir,'owner-role-conversations.json');this.pack=null;this.data=empty();
-    this.sending=false;this.queue=Promise.resolve();
+    this.sending=false;this.refreshing=false;this.queue=Promise.resolve();
   }
   async init(){
     const sd=await lstat(this.stateDir);if(!sd.isDirectory()||sd.isSymbolicLink()||(sd.mode&0o077)!==0)err('PRIVATE_STATE_DIR_REQUIRED');
@@ -62,7 +62,7 @@ export class OwnerRoleChat {
   status(){return {version:'P7-B23',mode:'FIRST_PARTY_STANDALONE_ONLY',roles:this.pack.roles.map(r=>({id:r.id,name:r.name,mention:r.mention,liveCertified:false,training:'PREPARED_NOT_INDEPENDENTLY_CERTIFIED'})),
     modelRequested:'gpt-6.1-sol',reasoningRequested:'xhigh',providerReady:this.siwc.status().readyForInference===true,
     ownerConsentPerMessage:true,proprietaryOfficeBridge:false,amazonDataConnected:false,amazonWrites:false,paidApiFallback:false};}
-  async refreshOnly(){if(this.sending||this.siwc.running)err('OTHER_MODEL_REQUEST_ACTIVE');await this.siwc.grant();return this.status();}
+  async refreshOnly(){if(this.sending||this.refreshing||this.siwc.running)err('OTHER_MODEL_REQUEST_ACTIVE');this.refreshing=true;try{await this.siwc.grant();return this.status();}finally{this.refreshing=false;}}
   list({market}={}){if(!validMarket(market))err('INVALID_MARKET');return {market,threads:this.data.threads.filter(t=>t.market===market).map(t=>({id:t.id,roleId:t.roleId,status:t.status||'READY',locked:!!t.locked,messageCount:t.messages.length,createdAt:t.createdAt})).reverse()};}
   open({market,roleId}={}){
     if(!validMarket(market)||!ORDER.includes(roleId))err('INVALID_MARKET_OR_ROLE');
@@ -75,7 +75,7 @@ export class OwnerRoleChat {
     messages:t.messages.map(m=>({...m,responseId:m.responseId?m.responseId.slice(0,10)+'…':null})),providerAttestationByClientOnly:true};}
   async send({id,market,text,ownerConfirmed}={}){
     if(!ownerConfirmed)err('OWNER_EXPLICIT_CONSENT_REQUIRED');
-    if(this.sending||this.siwc.running)err('OTHER_MODEL_REQUEST_ACTIVE');
+    if(this.sending||this.refreshing||this.siwc.running)err('OTHER_MODEL_REQUEST_ACTIVE');
     const t=this.find(id,market);
     if(t.locked||t.status==='BLOCKED_UNCERTAIN_AFTER_RESTART')err('UNCERTAIN_RESULT_NO_RETRY');
     if(!safeText(text,3500))err('INVALID_ROLE_MESSAGE');
