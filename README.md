@@ -1,6 +1,6 @@
 # Sol Workplace — P7-B17 Owner Agent MCP Handoff
 
-**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.4.2 · **Licenza:** MIT · **Stato:** sorgente pubblico; la distribuzione non contiene credenziali né abilita automaticamente il provider. Una prova di risposta reale è stata documentata separatamente su un Mac dell’owner; le nuove installazioni e la VM richiedono verifiche proprie.
+**Fonte pubblica:** `https://github.com/edoardoceciarelli97-ai/personal-task-engine/tree/sol-workplace-oss` · **Versione:** 0.7.0 · **Licenza:** MIT · **Stato:** sorgente pubblico; la distribuzione non contiene credenziali né abilita automaticamente il provider. Una prova di risposta reale è stata documentata separatamente su un Mac dell’owner; le nuove installazioni e la VM richiedono verifiche proprie.
 
 Questa applicazione è una chat locale autonoma in italiano. Il suo codice è separato dal gestionale proprietario Amazon AI Business OS. Quando avviata dall'utente, funziona da sola su `http://127.0.0.1:4278`: non richiede né espone API del gestionale proprietario e non trasferisce token ChatGPT all'Office. L'Office può mostrare la UI in una cornice, ma non può utilizzare il suo accesso SIWC come proxy.
 
@@ -116,3 +116,10 @@ Sol Workplace 0.6.0 include una pagina locale `http://127.0.0.1:4278/academy` pe
 Avvio su Mac con kit privato owner-controlled: il launcher installa soltanto la nuova versione OSS e il pack d'esame in cartella privata, preservando lo stesso vault e il vecchio archivio. Non pubblicare il pack privato o l'intero sistema Amazon OS su GitHub.
 
 Fonti: https://openai.com/policies/sign-in-with-chatgpt-terms/ ; https://developers.openai.com/siwc/token-sharing-open-source
+
+
+## P7-B23 — Sette specialisti nella stessa app SIWC
+
+La pagina locale `/roles` permette al titolare di usare sette configurazioni professionali, con istruzioni tratte dalla baseline privata P7-B18 e caricate da `SOL_WORKPLACE_ROLE_PACK_PATH`. Non pubblica i sette manuali, non condivide il vault, non espone un proxy di inferenza ad Amazon OS. Ogni messaggio richiede un consenso dell'owner e viene atteso fino a `response.completed`. Il catalogo dei modelli e le quote dell'account restano vincoli di provider.
+
+La nuova funzione **non** certifica automaticamente gli agenti. Dettagli tecnici e operativi: [docs/P7B23_OWNER_SEVEN_ROLE_CHAT.md](docs/P7B23_OWNER_SEVEN_ROLE_CHAT.md).

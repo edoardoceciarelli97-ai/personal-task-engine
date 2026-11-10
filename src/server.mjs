@@ -8,6 +8,7 @@ import {getP7B9Readiness} from './p7b9-provider-contract.mjs';
 import {SiwcRuntime} from './siwc-runtime.mjs';
 import {OwnerAgentHandoff} from './owner-agent-handoff.mjs';
 import {OwnerExamSession} from './owner-exam-session.mjs';
+import {OwnerRoleChat} from './owner-role-chat.mjs';
 import {localMcpConfig,callLocalMcp} from './mcp-local-client.mjs';
 const root=path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
@@ -18,7 +19,7 @@ const limitBody=async(req,max=40000)=>{
   for await(const c of req){size+=c.length;if(size>max)throw Error('BODY_TOO_LARGE');chunks.push(c);}
   const str=Buffer.concat(chunks).toString('utf8');return JSON.parse(str);
 };
-export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true,agentMcpConfig=localMcpConfig(),agentMcpCall=callLocalMcp,ownerExamPackFile=null,ownerExamDelayMs=10000}={}) {
+export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFile=null,siwcFetcher=fetch,officeDemo=true,agentMcpConfig=localMcpConfig(),agentMcpCall=callLocalMcp,ownerExamPackFile=null,ownerExamDelayMs=10000,ownerRolePackFile=null}={}) {
   if(!validPort(officePort)||!validPort(chatPort)||officePort===chatPort)throw Error('INVALID_OR_EQUAL_PORT');
   if(!stateDir||!path.isAbsolute(stateDir))throw Error('EXPLICIT_ABSOLUTE_STATE_DIRECTORY_REQUIRED');
   const store=await openStore(stateDir);
@@ -26,6 +27,7 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
   const siwc=new SiwcRuntime({stateDir,chatOrigin,gateFile,fetcher:siwcFetcher});
   const agentHandoff=new OwnerAgentHandoff({config:agentMcpConfig,siwc,store,mcpCall:agentMcpCall});
   const academy=ownerExamPackFile ? await new OwnerExamSession({stateDir,packFile:ownerExamPackFile,siwc,waitMs:ownerExamDelayMs}).init():null;
+  const roleChat=ownerRolePackFile ? await new OwnerRoleChat({stateDir,packFile:ownerRolePackFile,siwc}).init():null;
   const secret=randomBytes(32).toString('hex');
   const handler=(office)=>http.createServer(async(req,res)=>{
     const currentOrigin=office?officeOrigin:chatOrigin;
@@ -67,6 +69,17 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
       return j(200,await agentHandoff.history());
     if(!office && u.pathname==='/api/siwc/owner-state' && req.method==='GET')return j(200,siwc.status());
 
+    if(!office && u.pathname==='/api/roles/status' && req.method==='GET')
+      return j(200,roleChat ? roleChat.status():{installed:false,roles:[],providerReady:false});
+    if(!office && u.pathname==='/api/roles/threads' && req.method==='GET') {
+      if(!roleChat)return j(423,{error:'OWNER_PRIVATE_ROLES_NOT_INSTALLED'});
+      try{return j(200,roleChat.list({market:u.searchParams.get('market')}));}catch(e){return j(422,{error:e.message});}
+    }
+    if(!office && u.pathname==='/api/roles/thread' && req.method==='GET') {
+      if(!roleChat)return j(423,{error:'OWNER_PRIVATE_ROLES_NOT_INSTALLED'});
+      try{return j(200,roleChat.read({market:u.searchParams.get('market'),id:u.searchParams.get('id')}));}catch(e){return j(422,{error:e.message});}
+    }
+
     if(!office && u.pathname==='/api/academy/status' && req.method==='GET')
       return j(200,academy ? academy.publicStatus():{state:'EXAM_PACK_NOT_INSTALLED',total:0,noPaidApi:true});
     if(!office && u.pathname==='/api/academy/prompts' && req.method==='GET')
@@ -107,6 +120,22 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
       let input;
       try{input=await limitBody(req);}catch(e){return j(e.message==='BODY_TOO_LARGE'?413:400,{error:'INVALID_JSON_OR_TOO_LARGE'});}
       try{
+        if(u.pathname.startsWith('/api/roles/')){
+          if(!roleChat)return j(423,{error:'OWNER_PRIVATE_ROLES_NOT_INSTALLED',dispatched:false});
+          if(u.pathname==='/api/roles/refresh'){
+            if(!input||Object.keys(input).length!==0)return j(422,{error:'EMPTY_REFRESH_CONFIRMATION_REQUIRED'});
+            return j(200,await roleChat.refreshOnly());
+          }
+          if(u.pathname==='/api/roles/new'){
+            if(!input||Object.keys(input).sort().join(',')!=='market,roleId')return j(422,{error:'ROLES_NEW_SCHEMA'});
+            return j(201,await roleChat.open(input));
+          }
+          if(u.pathname==='/api/roles/send'){
+            if(!input||Object.keys(input).sort().join(',')!=='id,market,ownerConfirmed,text')return j(422,{error:'ROLES_SEND_SCHEMA',dispatched:false});
+            return j(200,await roleChat.send(input));
+          }
+          return j(404,{error:'UNKNOWN_ROLE_ACTION',dispatched:false});
+        }
         if(u.pathname.startsWith('/api/academy/')){
           if(!academy)return j(423,{error:'OWNER_EXAM_PACK_NOT_INSTALLED',dispatched:false});
           if(u.pathname==='/api/academy/start'){
@@ -197,7 +226,7 @@ export async function createPair({officePort=4277,chatPort=4278,stateDir,gateFil
     }
     if(u.pathname.startsWith('/api/'))return j(404,{error:'UNKNOWN_API_ROUTE'});
     if(!['GET','HEAD'].includes(req.method))return j(405,{error:'METHOD_NOT_ALLOWED'});
-    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css','/agent-handoff':'public/agent-handoff.html','/agent-handoff.js':'public/agent-handoff.js','/agent-handoff.css':'public/agent-handoff.css','/academy':'public/academy.html','/academy.js':'public/academy.js','/academy.css':'public/academy.css'};
+    const routes=office?{'/':'office-simulation/index.html','/office.css':'office-simulation/style.css'}:{'/':'public/index.html','/app.js':'public/app.js','/style.css':'public/style.css','/agent-handoff':'public/agent-handoff.html','/agent-handoff.js':'public/agent-handoff.js','/agent-handoff.css':'public/agent-handoff.css','/academy':'public/academy.html','/academy.js':'public/academy.js','/academy.css':'public/academy.css','/roles':'public/roles.html','/roles.js':'public/roles.js','/roles.css':'public/roles.css'};
     const relative=routes[u.pathname];if(!relative)return answer(404,'Not Found','text/plain; charset=utf-8');
     try{
       let content=await fs.readFile(path.join(root,relative),'utf8');
